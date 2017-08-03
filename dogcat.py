@@ -31,11 +31,11 @@ LABEL_CAT = 0
 dog_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'dog' in i and 'jpg' in i]
 cat_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'cat' in i and 'jpg' in i]
 
-train_paths = dog_paths[:100]  + cat_paths[:100]
-test_paths  = dog_paths[-100:] + cat_paths[-100:]
+train_paths = dog_paths[:1000] + cat_paths[:1000]
+valid_paths = dog_paths[-500:] + cat_paths[-500:]
 
 random.shuffle(train_paths)
-test_paths = test_paths[:25]
+random.shuffle(valid_paths)
 
 def read_image(path):
     # import cv2
@@ -67,18 +67,18 @@ def read_labels(image_paths):
     return labels
 
 x_train = prep_data(train_paths)
-x_test  = prep_data(test_paths)
+x_valid = prep_data(valid_paths)
 
 print("Train shape: {}".format(x_train.shape))
-print("Test shape: {}".format(x_test.shape))
+print("valid shape: {}".format(x_valid.shape))
 
 y_train = read_labels(train_paths)
-y_test  = read_labels(test_paths)
+y_valid = read_labels(valid_paths)
 
 y_train = keras.utils.to_categorical(y_train, LABEL_NUM)
-y_test  = keras.utils.to_categorical(y_test , LABEL_NUM)
+y_valid = keras.utils.to_categorical(y_valid , LABEL_NUM)
 
-batch_size = 10
+batch_size = 100
 epochs = 12
 
 model = Sequential()
@@ -117,7 +117,7 @@ model.fit(x_train, y_train,
     batch_size=batch_size,
     epochs=epochs,
     verbose=1,
-    validation_data=(x_test, y_test))
-score = model.evaluate(x_test, y_test, verbose=0)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
+    validation_data=(x_valid, y_valid))
+score = model.evaluate(x_valid, y_valid, verbose=0)
+print('valid loss:', score[0])
+print('valid accuracy:', score[1])
