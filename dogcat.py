@@ -18,7 +18,8 @@ TEST_DIR = './input/dogcat/test/'
 ROWS = 64
 COLS = 64
 CHANNELS = 3
-INPUT_SHAPE = (CHANNELS, ROWS, COLS)
+# INPUT_SHAPE = (CHANNELS, ROWS, COLS) # Theano
+INPUT_SHAPE = (ROWS, COLS, CHANNELS) # Tensorflow
 
 LABEL_NUM = 2
 LABEL_DOG = 1
@@ -30,19 +31,16 @@ LABEL_CAT = 0
 dog_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'dog' in i and 'jpg' in i]
 cat_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'cat' in i and 'jpg' in i]
 
-
 train_paths = dog_paths[:100]  + cat_paths[:100]
 test_paths  = dog_paths[-100:] + cat_paths[-100:]
 
 random.shuffle(train_paths)
 test_paths = test_paths[:25]
 
-# def read_image_cv(path):
-#     import cv2
-#     image = cv2.imread(path, cv2.IMREAD_COLOR)
-#     return cv2.resize(image, (ROWS, COLS), interpolation=cv2.INTER_CUBIC)
-
 def read_image(path):
+    # import cv2
+    # image = cv2.imread(path, cv2.IMREAD_COLOR)
+    # image = cv2.resize(image, (ROWS, COLS), interpolation=cv2.INTER_CUBIC)
     with PIL.Image.open(path) as image:
         image = image.resize((ROWS, COLS), resample=PIL.Image.BICUBIC)
         im_arr = np.fromstring(image.tobytes(), dtype=np.uint8)
@@ -51,11 +49,11 @@ def read_image(path):
 
 def prep_data(image_paths):
     count = len(image_paths)
-    data = np.ndarray((count, CHANNELS, ROWS, COLS), dtype=np.uint8)
+    data = np.ndarray((count, *INPUT_SHAPE), dtype=np.uint8)
 
     for i, image_path in enumerate(image_paths):
         image = read_image(image_path)
-        data[i] = image.T
+        data[i] = image if image.shape == INPUT_SHAPE else image.T
         if i % 250 == 0: print('Processed {} of {}'.format(i, count))
     return data
 
@@ -84,21 +82,21 @@ batch_size = 10
 epochs = 12
 
 model = Sequential()
-model.add(Convolution2D(32, 3, 3, border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
-model.add(Convolution2D(32, 3, 3, border_mode='same', activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="th"))
+model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
+model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Convolution2D(64, 3, 3, border_mode='same', activation='relu'))
-model.add(Convolution2D(64, 3, 3, border_mode='same', activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="th"))
+model.add(Conv2D(64, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(Conv2D(64, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Convolution2D(128, 3, 3, border_mode='same', activation='relu'))
-model.add(Convolution2D(128, 3, 3, border_mode='same', activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="th"))
+model.add(Conv2D(128, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(Conv2D(128, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Convolution2D(256, 3, 3, border_mode='same', activation='relu'))
-model.add(Convolution2D(256, 3, 3, border_mode='same', activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), dim_ordering="th"))
+model.add(Conv2D(256, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(Conv2D(256, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
 model.add(Flatten())
 model.add(Dense(256, activation='relu'))
