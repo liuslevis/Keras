@@ -25,14 +25,14 @@ LABEL_NUM = 2
 LABEL_DOG = 1
 LABEL_CAT = 0
 
-# train_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'jpg' in i]
-# test_paths  = [TEST_DIR + i  for i in os.listdir(TEST_DIR)  if 'jpg' in i]
+test_paths = [TEST_DIR + i for i in os.listdir(TEST_DIR) if 'jpg' in i]
 
 dog_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'dog' in i and 'jpg' in i]
 cat_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'cat' in i and 'jpg' in i]
 
-train_paths = dog_paths[:1000] + cat_paths[:1000]
-valid_paths = dog_paths[-500:] + cat_paths[-500:]
+split_index = int(len(dog_paths) * 0.8)
+train_paths = dog_paths[:split_index]  + cat_paths[:split_index]
+valid_paths = dog_paths[-split_index:] + cat_paths[-split_index:]
 
 random.shuffle(train_paths)
 random.shuffle(valid_paths)
@@ -54,7 +54,7 @@ def prep_data(image_paths):
     for i, image_path in enumerate(image_paths):
         image = read_image(image_path)
         data[i] = image if image.shape == INPUT_SHAPE else image.T
-        if i % 250 == 0: print('Processed {} of {}'.format(i, count))
+        if i % 250 == 0: print('Loading image {} of {}'.format(i, count))
     return data
 
 def read_labels(image_paths):
@@ -68,9 +68,11 @@ def read_labels(image_paths):
 
 x_train = prep_data(train_paths)
 x_valid = prep_data(valid_paths)
+x_test  = prep_data(test_paths)
 
 print("Train shape: {}".format(x_train.shape))
-print("valid shape: {}".format(x_valid.shape))
+print("Valid shape: {}".format(x_valid.shape))
+print("Test  shape: {}".format(x_test.shape))
 
 y_train = read_labels(train_paths)
 y_valid = read_labels(valid_paths)
@@ -78,8 +80,8 @@ y_valid = read_labels(valid_paths)
 y_train = keras.utils.to_categorical(y_train, LABEL_NUM)
 y_valid = keras.utils.to_categorical(y_valid , LABEL_NUM)
 
-batch_size = 100
-epochs = 12
+batch_size = 50
+epochs = 2
 
 model = Sequential()
 model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
@@ -121,3 +123,5 @@ model.fit(x_train, y_train,
 score = model.evaluate(x_valid, y_valid, verbose=0)
 print('valid loss:', score[0])
 print('valid accuracy:', score[1])
+
+pred = model.predict(x_test, batch_size=batch_size, verbose=1)
