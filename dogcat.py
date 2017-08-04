@@ -8,9 +8,7 @@ from scipy import ndimage
 import keras
 from keras.models import Sequential
 from keras.layers import Input, Dropout, Flatten, Convolution2D, MaxPooling2D, Dense, Activation, Conv2D
-from keras.optimizers import RMSprop
-from keras.callbacks import ModelCheckpoint, Callback, EarlyStopping
-from keras.utils import np_utils
+from keras.callbacks import EarlyStopping
 
 TRAIN_DIR = './input/dogcat/train/'
 TEST_DIR = './input/dogcat/test/'
@@ -27,13 +25,12 @@ LABEL_CAT = 0
 
 test_paths = [TEST_DIR + i for i in os.listdir(TEST_DIR) if 'jpg' in i]
 
-dog_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'dog' in i and 'jpg' in i]
-cat_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'cat' in i and 'jpg' in i]
+dog_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'dog.' in i and 'jpg' in i]
+cat_paths = [TRAIN_DIR + i for i in os.listdir(TRAIN_DIR) if 'cat.' in i and 'jpg' in i]
 
 split_index = int(len(dog_paths) * 0.8)
-train_paths = dog_paths[:split_index]  + cat_paths[:split_index]
-valid_paths = dog_paths[-split_index:] + cat_paths[-split_index:]
-
+train_paths = dog_paths[:split_index] + cat_paths[:split_index]
+valid_paths = dog_paths[split_index:] + cat_paths[split_index:]
 random.shuffle(train_paths)
 random.shuffle(valid_paths)
 
@@ -57,14 +54,14 @@ def prep_data(image_paths):
         if i % 250 == 0: print('Loading image {} of {}'.format(i, count))
     return data
 
-def read_labels(image_paths):
+def read_labels_as_categorical(image_paths):
     labels = []
     for i in image_paths:
-        if 'dog' in i:
+        if 'dog.' in i:
             labels.append(LABEL_DOG)
         else:
             labels.append(LABEL_CAT)
-    return labels
+    return keras.utils.to_categorical(labels, LABEL_NUM)
 
 x_train = prep_data(train_paths)
 x_valid = prep_data(valid_paths)
@@ -74,16 +71,14 @@ print("Train shape: {}".format(x_train.shape))
 print("Valid shape: {}".format(x_valid.shape))
 print("Test  shape: {}".format(x_test.shape))
 
-y_train = read_labels(train_paths)
-y_valid = read_labels(valid_paths)
-
-y_train = keras.utils.to_categorical(y_train, LABEL_NUM)
-y_valid = keras.utils.to_categorical(y_valid , LABEL_NUM)
-
-batch_size = 50
-epochs = 2
+y_train = read_labels_as_categorical(train_paths)
+y_valid = read_labels_as_categorical(valid_paths)
 
 model = Sequential()
+model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
+model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
 model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
 model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
@@ -107,11 +102,18 @@ model.add(Dropout(0.5))
 model.add(Dense(256, activation='relu'))
 model.add(Dropout(0.5))
 
-model.add(Dense(LABEL_NUM))
-model.add(Activation('sigmoid'))
+model.add(Dense(LABEL_NUM, activation='softmax'))
+# model.add(Activation('sigmoid'))
 
-model.compile(loss=keras.losses.categorical_crossentropy,
-    optimizer=keras.optimizers.Adadelta(),
+batch_size = 50
+epochs = 10
+optimizer = keras.optimizers.RMSprop(lr=1e-4)
+# optimizer = keras.optimizers.Adadelta(lr=1e-1)
+loss = keras.losses.categorical_crossentropy
+
+model.compile(
+    loss=loss,
+    optimizer=optimizer,
     metrics=['accuracy'])
 model.summary()
 
@@ -119,7 +121,9 @@ model.fit(x_train, y_train,
     batch_size=batch_size,
     epochs=epochs,
     verbose=1,
-    validation_data=(x_valid, y_valid))
+    validation_data=(x_valid, y_valid),
+    callbacks=[EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')],
+    )
 score = model.evaluate(x_valid, y_valid, verbose=0)
 print('valid loss:', score[0])
 print('valid accuracy:', score[1])
