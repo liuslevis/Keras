@@ -75,31 +75,29 @@ y_train = read_labels_as_categorical(train_paths)
 y_valid = read_labels_as_categorical(valid_paths)
 
 model = Sequential()
-model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
-model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(Conv2D(64, kernel_size=(3, 3), border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu', input_shape=INPUT_SHAPE))
-model.add(Conv2D(32, kernel_size=(3, 3), border_mode='same', activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(64, kernel_size=(3, 3), border_mode='same', activation='relu'))
-model.add(Conv2D(64, kernel_size=(3, 3), border_mode='same', activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(128, kernel_size=(3, 3), border_mode='same', activation='relu'))
 model.add(Conv2D(128, kernel_size=(3, 3), border_mode='same', activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
 model.add(Conv2D(256, kernel_size=(3, 3), border_mode='same', activation='relu'))
 model.add(Conv2D(256, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(512, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(Conv2D(512, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(512, kernel_size=(3, 3), border_mode='same', activation='relu'))
+model.add(Conv2D(512, kernel_size=(3, 3), border_mode='same', activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
 model.add(Flatten())
-model.add(Dense(256, activation='relu'))
+model.add(Dense(1024, activation='relu'))
 model.add(Dropout(0.5))
 
-model.add(Dense(256, activation='relu'))
+model.add(Dense(1024, activation='relu'))
 model.add(Dropout(0.5))
 
 model.add(Dense(LABEL_NUM, activation='softmax'))
@@ -107,8 +105,8 @@ model.add(Dense(LABEL_NUM, activation='softmax'))
 
 batch_size = 50
 epochs = 10
-optimizer = keras.optimizers.RMSprop(lr=1e-4)
-# optimizer = keras.optimizers.Adadelta(lr=1e-1)
+# optimizer = keras.optimizers.RMSprop(lr=1e-1)
+optimizer = keras.optimizers.Adadelta(lr=1e-1)
 loss = keras.losses.categorical_crossentropy
 
 model.compile(
