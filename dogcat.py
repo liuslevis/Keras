@@ -1,4 +1,5 @@
 # https://www.kaggle.com/jeffd23/catdognet-keras-convnet-starter
+# https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html
 import os, random
 import numpy as np
 import PIL
